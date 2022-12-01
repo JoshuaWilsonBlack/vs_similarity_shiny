@@ -19,14 +19,14 @@ shinyUI(
         
         selectInput(
           "high_int", 
-          label = "High PC Interval", 
+          label = "High Amplitude Interval", 
           choices = initial_high_ints,
           selected = initial_high
         ),
         
         selectInput(
           "low_int", 
-          label = "Low PC Interval", 
+          label = "Low Amplitude Interval", 
           choices = initial_low_ints,
           selected = initial_low
         ),

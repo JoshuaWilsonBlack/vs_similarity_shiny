@@ -37,11 +37,11 @@ qb_interval_spaces <- qb_interval_spaces %>%
         n == 10
     )
 
-# Add height data to qb_interval_spaces # Shouldn't do this in the APP!
+# Add height data to qb_interval_spaces 
 qb_interval_spaces <- qb_interval_spaces %>%
     mutate(
-        height = if_else(PC1_score > 1, "high", NULL),
-        height = if_else(PC1_score < -1, "low", height)
+        height = if_else(scaled_amp > 0.3, "high", NULL),
+        height = if_else(scaled_amp < -0.3, "low", height)
     )
 
 vowel_colours = c(
@@ -193,30 +193,28 @@ plot_space <- function(space, titles = TRUE) {
         }
     }
     
-    if (norm_method %in% c("lob2", "lob2_int", "lob2_int_240", "lob2_int_60")) {
-        
-        # Set appropriate plot limits and labels
-        f2_limits <- c(2.4, -2.4)
-        f1_limits <- c(2.4, -1.75)
-        f2_label <- "F2 (normalised)"
-        f1_label <- "F1 (normalised)"
-        
-        # Set plot subtitle
-        if (norm_method == "lob2") {
-            plot_subtitle = "Lobanov 2.0 normalization"
-        } else { # Only alternative is "lob2_int"
-            plot_subtitle = "Lobanov 2.0 normalization (interval level)"
-        }
-        
-    } else {
-        
-        f2_limits <- rev(range(space$F2_50) + c(-150, 150))
-        f1_limits <- rev(range(space$F1_50) + c(-50, 50))
-        f2_label <- "F2"
-        f1_label <- "F1"
-        plot_subtitle = "Non-normalized data"
-        
+  if (norm_method %in% c("lob2", "lob2_int", "lob2_int_240", "lob2_int_60")) {
+    
+    # Set appropriate plot limits and labels
+    f2_limits <- c(2, -2.5)
+    f1_limits <- c(2.5, -1.5)
+    f2_label <- "F2 (normalised)"
+    f1_label <- "F1 (normalised)"
+    
+    # Set plot subtitle
+    if (norm_method == "lob2") {
+      plot_subtitle = "Lobanov 2.0 normalization"
+    } else { # Only alternative is "lob2_int"
+      plot_subtitle = "Lobanov 2.0 normalization (interval level)"
     }
+    
+  } else {
+    
+    f2_label <- "F2 (Hz)"
+    f1_label <- "F1 (Hz)"
+    plot_subtitle = "Non-normalized data"
+    
+  }
     
     out_plot <- space %>%
         ggplot(
@@ -234,7 +232,7 @@ plot_space <- function(space, titles = TRUE) {
         scale_x_reverse(
             position = "top", 
             name = f2_label, 
-            limits = f2_limits
+            limits = f2_limits 
         ) +
         scale_y_reverse(
             position = "right", 
@@ -272,11 +270,13 @@ plot_panel <- function(
             interval_length == int_length
         )
     
-    # Add PC1 score to interval plot
+    # Add amp score to interval plot
     interval_plot <- plot_space(interval_data, titles = FALSE) +
         geom_label(
             aes(
-                label = glue("PC1: {signif(PC1_score, 2)}")
+                label = glue(
+                  "Amp: {signif(scaled_amp, 2)}, PC1: {signif(PC1_score, 2)}"
+                )
             ),
             x = -Inf,
             y = -Inf,
@@ -350,7 +350,7 @@ speaker_panel <- function(
         qb_interval_spaces,
         qb_vowel_spaces,
         norm_method = norm_method,
-        mean_scaled = TRUE
+        mean_scaled = mean_scaled
     )
     low_panel <- plot_panel(
         speaker,
@@ -359,7 +359,7 @@ speaker_panel <- function(
         qb_interval_spaces,
         qb_vowel_spaces,
         norm_method = norm_method,
-        mean_scaled = TRUE
+        mean_scaled = mean_scaled
     )
     
     norm_title <- switch(
@@ -373,7 +373,7 @@ speaker_panel <- function(
     )
     
     comp_panel <- high_panel/low_panel + plot_annotation(
-        title = paste(speaker, "high and low PC intervals"),
+        title = paste(speaker, "high and low amplitude intervals"),
         subtitle = paste(norm_title, "similar speakers")
     )
     comp_panel
@@ -382,8 +382,8 @@ speaker_panel <- function(
 intro_text <- "# Amplitude and Cross-Speaker Vowel Space Similarity
 
 This Shiny interactive enables exploration of judgements of across-speaker vowel 
-space similarity and their dependence on relative amplitude as measured by 
-PC score.
+space similarity and their dependence on relative amplitude, measured by z-scoring
+amplitiude for each speaker.
 
 The visualisations we generate have two rows:
 
@@ -394,8 +394,8 @@ The controls are:
 
 - **Interval length:** whether the corpus is divided into 60 or 240 second intervals.
 - **Speaker:** the speaker we will select intervals from.
-- **High PC interval:** a list of intervals from the selected speaker with high (>1) PC1 values.
-- **Low PC interval:** a list of intervals from the selected speaker with low (<1) PC1 values.
+- **High PC interval:** a list of intervals from the selected speaker with high (>0.3) mean amplitude values.
+- **Low PC interval:** a list of intervals from the selected speaker with low (<0.3) mean amplitude values.
 - **Normalisation method:** method for normalising data, with options:
     - 'Raw Hz, whole recording': mean value for each monophthong in Hz across whole recording.
     - 'Lobanov 2.0, within interval': the Lobanov 2.0 normalisation method (see [Brand et al. 2021](https://www.sciencedirect.com/science/article/pii/S0095447021000711)) applied *within* each interval.
@@ -408,8 +408,11 @@ in another will be relative to the distribution of distances between
 <span style='font-variant:small-caps;'>DRESS</span> vowels in the corpus as a whole.
 This means that vowels with a lot of 'room to move' in the vowel space are 
 less determinative of vowel space similarity.
+
+The PC1 score for each interval is also given. In our PCA analysis, PC1 patterns
+with amplitude.
     
-This interactive was designed for the purpose of the paper: 
+This interactive was designed for the purpose of the paper 
 'The overlooked effect of amplitude on within-speaker vowel variation' (under review)
 
 Code for this interactive is available at: (blanked for anonymous review)
