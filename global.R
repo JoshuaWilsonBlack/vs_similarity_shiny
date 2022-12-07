@@ -258,80 +258,86 @@ plot_panel <- function(
     interval_df, # Dataframe containing original interval
     vowel_spaces_df, # Dataframe containing all vowel spaces
     norm_method,
-    mean_scaled = TRUE
+    mean_scaled = TRUE,
+    high = TRUE
 ) {
-    # Given an interval, this function returns a plot of the interval and the
-    # three most similar intervals.
-    interval_data <- interval_df %>%
-        filter(
-            Speaker == speaker,
-            interval == int,
-            norm == norm_method,
-            interval_length == int_length
-        )
-    
-    # Add amp score to interval plot
-    interval_plot <- plot_space(interval_data, titles = FALSE) +
-        geom_label(
-            aes(
-                label = glue(
-                  "Amp: {signif(scaled_amp, 2)}, PC1: {signif(PC1_score, 2)}"
-                )
-            ),
-            x = -Inf,
-            y = -Inf,
-            vjust = 0,
-            hjust = 0,
-            alpha = 0.5,
-            na.rm = TRUE,
-            inherit.aes = FALSE,
-            data = interval_data %>% 
-                filter(Vowel == "DRESS")
-        ) +
-        labs(
-            title = glue("{speaker}_{int}"),
-            subtitle = glue("Interval length: {int_length}")
-        )
-    
-    closest_3 <- speaker_distances(
-        interval_data,
-        vowel_spaces_df,
-        norm_method = norm_method,
-        int_length = int_length,
-        mean_scaled = mean_scaled
-    ) %>%
-        filter(
-            Speaker != speaker # Excludes speaker from most similar speakers
-        ) %>%
-        slice_head(n=3) %>%
-        pull(Speaker)
-    
-    # Change interval lob2 name for vowel space data frame.
-    if (norm_method == "lob2_int") {
-        vs_norm_method <- glue("lob2_int_{int_length}")
-    } else {
-        vs_norm_method <- norm_method
-    }
-    
-    similar_spaces <- vowel_spaces_df %>%
-        filter(
-            Speaker %in% closest_3,
-            norm == vs_norm_method
-        ) %>%
-        group_by(Speaker) %>%
-        nest() %>%
-        mutate(
-            plot = map(data, ~ plot_space(.x, titles = FALSE)),
-            plot = map2(plot, Speaker, ~ .x + labs(title = .y))
-        ) %>%
-        pull(plot)
-    
-    panel <- (
-        interval_plot | 
-            similar_spaces[[1]] | 
-            similar_spaces[[2]] | 
-            similar_spaces[[3]]
+  # Given an interval, this function returns a plot of the interval and the
+  # three most similar intervals.
+  interval_data <- interval_df %>%
+    filter(
+      Speaker == speaker,
+      interval == int,
+      norm == norm_method,
+      interval_length == int_length
     )
+  
+  interval_plot <- plot_space(interval_data, titles = FALSE) +
+    geom_label(
+      aes(
+        label = glue(
+          # Add PC1 score and amplitude to interval plot
+          "PC1: {signif(PC1_score, 2)},  Amp: {signif(scaled_amp, 2)}"
+        )
+      ),
+      x = -Inf,
+      y = -Inf,
+      vjust = 0,
+      hjust = 0,
+      alpha = 0.5,
+      na.rm = TRUE,
+      inherit.aes = FALSE,
+      data = interval_data %>% filter(Vowel == "DRESS")
+    ) +
+    labs(
+      subtitle = glue("Interval: {speaker}_{int}"),
+      # subtitle = glue("Interval length: {int_length}")
+    )
+  
+  closest_3 <- speaker_distances(
+    interval_data,
+    vowel_spaces_df,
+    norm_method = norm_method,
+    int_length = int_length,
+    mean_scaled = mean_scaled
+  ) %>%
+    filter(
+      Speaker != speaker # Excludes speaker from most similar speakers
+    ) %>%
+    slice_head(n=3) %>%
+    pull(Speaker)
+  
+  # Change interval lob2 name for vowel space data frame.
+  if (norm_method == "lob2_int") {
+    vs_norm_method <- glue("lob2_int_{int_length}")
+  } else {
+    vs_norm_method <- norm_method
+  }
+  
+  similar_spaces <- vowel_spaces_df %>%
+    filter(
+      Speaker %in% closest_3,
+      norm == vs_norm_method
+    ) %>%
+    group_by(Speaker) %>%
+    nest() %>%
+    mutate(
+      plot = map(data, ~ plot_space(.x, titles = FALSE)),
+      plot = map2(plot, Speaker, ~ .x + labs(subtitle = glue("Speaker: {.y}")))
+    ) %>%
+    pull(plot)
+  
+  if (high) {
+    interval_title = "High amplitude interval"
+  } else {
+    interval_title = "Low amplitude interval"
+  }
+  
+  panel <- (
+    (interval_plot) + labs(title = interval_title) | 
+      (similar_spaces[[1]] + labs(title = "Most similar speakers")) | 
+      similar_spaces[[2]] | 
+      similar_spaces[[3]]
+  )
 }
 
 
@@ -343,40 +349,41 @@ speaker_panel <- function(
     norm_method,
     mean_scaled = TRUE
 ) {
-    high_panel <- plot_panel(
-        speaker,
-        high_int,
-        int_length,
-        qb_interval_spaces,
-        qb_vowel_spaces,
-        norm_method = norm_method,
-        mean_scaled = mean_scaled
-    )
-    low_panel <- plot_panel(
-        speaker,
-        low_int,
-        int_length,
-        qb_interval_spaces,
-        qb_vowel_spaces,
-        norm_method = norm_method,
-        mean_scaled = mean_scaled
-    )
-    
-    norm_title <- switch(
-        norm_method,
-        "lob2" = "Lobanov 2.0",
-        "lob2_int_240" = "Lobanov 2.0 (by interval)",
-        "lob2_int_60" = "Lobanov 2.0 (by interval)",
-        "lob2_int" = "Lobanov 2.0 (by interval)",
-        "raw" = "Raw frequency (Hz)",
-        stop("Invalid norm_method value")
-    )
-    
-    comp_panel <- high_panel/low_panel + plot_annotation(
-        title = paste(speaker, "high and low amplitude intervals"),
-        subtitle = paste(norm_title, "similar speakers")
-    )
-    comp_panel
+  high_panel <- plot_panel(
+    speaker,
+    high_int,
+    int_length,
+    qb_interval_spaces,
+    qb_vowel_spaces,
+    norm_method = norm_method,
+    mean_scaled = mean_scaled
+  )
+  low_panel <- plot_panel(
+    speaker,
+    low_int,
+    int_length,
+    qb_interval_spaces,
+    qb_vowel_spaces,
+    norm_method = norm_method,
+    mean_scaled = mean_scaled,
+    high = FALSE
+  )
+  
+  norm_title <- switch(
+    norm_method,
+    "lob2" = "Lobanov 2.0",
+    "lob2_int_240" = "Lobanov 2.0 (by interval)",
+    "lob2_int_60" = "Lobanov 2.0 (by interval)",
+    "lob2_int" = "Lobanov 2.0 (by interval)",
+    "raw" = "Raw frequency (Hz)",
+    stop("Invalid norm_method value")
+  )
+  
+  comp_panel <- high_panel/low_panel + plot_annotation(
+    title = paste(speaker, "Similarity Plot"),
+    subtitle = paste(norm_title, "similar speakers")
+  )
+  comp_panel
 }
 
 intro_text <- "# Amplitude and Cross-Speaker Vowel Space Similarity
@@ -394,8 +401,8 @@ The controls are:
 
 - **Interval length:** whether the corpus is divided into 60 or 240 second intervals.
 - **Speaker:** the speaker we will select intervals from.
-- **High PC interval:** a list of intervals from the selected speaker with high (>0.3) mean amplitude values.
-- **Low PC interval:** a list of intervals from the selected speaker with low (<0.3) mean amplitude values.
+- **High Amplitude Interval:** a list of intervals from the selected speaker with high (>0.3) mean amplitude values.
+- **Low Amplitude Interval:** a list of intervals from the selected speaker with low (<0.3) mean amplitude values.
 - **Normalisation method:** method for normalising data, with options:
     - 'Raw Hz, whole recording': mean value for each monophthong in Hz across whole recording.
     - 'Lobanov 2.0, within interval': the Lobanov 2.0 normalisation method (see [Brand et al. 2021](https://www.sciencedirect.com/science/article/pii/S0095447021000711)) applied *within* each interval.
