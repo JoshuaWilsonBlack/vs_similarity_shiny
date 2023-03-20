@@ -40,7 +40,7 @@ qb_interval_spaces <- qb_interval_spaces %>%
 # Add height data to qb_interval_spaces 
 qb_interval_spaces <- qb_interval_spaces %>%
     mutate(
-        height = if_else(scaled_amp > 0.3, "high", NULL),
+        height = if_else(scaled_amp > 0.3, "high", NA),
         height = if_else(scaled_amp < -0.3, "low", height)
     )
 
