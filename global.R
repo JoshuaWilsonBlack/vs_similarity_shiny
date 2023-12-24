@@ -420,7 +420,8 @@ The PC1 score for each interval is also given. In our PCA analysis, PC1 patterns
 with amplitude.
     
 This interactive was designed for the purpose of the paper 
-'The overlooked effect of amplitude on within-speaker vowel variation' (under review)
+'The overlooked effect of amplitude on within-speaker vowel variation' 
+(*Linguistics Vanguard*, 2023, <https://doi.org/10.1515/lingvan-2022-0086>).
 
-Code for this interactive is available at: (blanked for anonymous review)
+Code for this interactive is available at: <https://github.com/JoshuaWilsonBlack/vs_similarity_shiny>
 "

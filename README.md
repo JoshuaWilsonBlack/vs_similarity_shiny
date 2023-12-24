@@ -29,4 +29,5 @@ This means that vowels with a lot of 'room to move' in the vowel space are
 less determinative of vowel space similarity.
     
 This interactive was designed for the purpose of the paper: 
-'The overlooked effect of amplitude on within-speaker vowel variation' (under review)
+'The overlooked effect of amplitude on within-speaker vowel variation' 
+(*Linguistics Vanguard*, 2023, <https://doi.org/10.1515/lingvan-2022-0086>)
